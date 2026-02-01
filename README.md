@@ -1,5 +1,9 @@
 # OpenClaw AWS
 [![Deploy Main](https://github.com/dortort/openclaw-aws/actions/workflows/deploy-main.yml/badge.svg)](https://github.com/dortort/openclaw-aws/actions/workflows/deploy-main.yml)
+[![PR Plan](https://github.com/dortort/openclaw-aws/actions/workflows/pr-plan.yml/badge.svg)](https://github.com/dortort/openclaw-aws/actions/workflows/pr-plan.yml)
+[![Scheduled Rebuild and Deploy](https://github.com/dortort/openclaw-aws/actions/workflows/scheduled-rebuild.yml/badge.svg)](https://github.com/dortort/openclaw-aws/actions/workflows/scheduled-rebuild.yml)
+[![Terraform >= 1.14.0](https://img.shields.io/badge/Terraform-%3E%3D%201.14.0-7B42BC?logo=terraform)](https://www.terraform.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ![OpenClaw AWS Header](docs/assets/openclaw-infra-header.png)
 
