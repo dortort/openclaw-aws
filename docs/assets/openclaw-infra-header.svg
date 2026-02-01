@@ -1,0 +1,71 @@
+<svg width="1600" height="685" viewBox="0 0 1600 685" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="685" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A0F1E"/>
+      <stop offset="0.45" stop-color="#0F1C3D"/>
+      <stop offset="1" stop-color="#1A2B5A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(800 342.5) rotate(90) scale(360 720)">
+      <stop offset="0" stop-color="#2E8CFF" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#0A0F1E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lobster" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A6C" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#FF4B5C" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="685" fill="url(#bg)"/>
+  <rect width="1600" height="685" fill="url(#glow)"/>
+
+  <g opacity="0.22" stroke="#6EC1FF" stroke-width="1.2">
+    <path d="M160 130 L420 120 L620 220 L900 210 L1140 120 L1460 150"/>
+    <path d="M120 520 L340 460 L560 520 L800 470 L1040 560 L1320 500 L1500 560"/>
+    <path d="M320 300 L520 280 L740 340 L980 320 L1220 360"/>
+    <path d="M260 200 L260 520"/>
+    <path d="M520 160 L520 520"/>
+    <path d="M980 150 L980 520"/>
+    <path d="M1320 170 L1320 520"/>
+  </g>
+
+  <g opacity="0.35" fill="#A6D6FF">
+    <circle cx="160" cy="130" r="4"/>
+    <circle cx="420" cy="120" r="4"/>
+    <circle cx="620" cy="220" r="4"/>
+    <circle cx="900" cy="210" r="4"/>
+    <circle cx="1140" cy="120" r="4"/>
+    <circle cx="1460" cy="150" r="4"/>
+    <circle cx="340" cy="460" r="4"/>
+    <circle cx="800" cy="470" r="4"/>
+    <circle cx="1320" cy="500" r="4"/>
+  </g>
+
+  <g opacity="0.18" stroke="#7FA8FF" stroke-width="1">
+    <rect x="116" y="560" width="120" height="56" rx="8"/>
+    <rect x="138" y="575" width="76" height="26" rx="4"/>
+    <rect x="1380" y="78" width="140" height="64" rx="10"/>
+    <rect x="1406" y="98" width="88" height="28" rx="5"/>
+    <rect x="1240" y="560" width="160" height="64" rx="10"/>
+    <path d="M1280 592 H1360"/>
+    <path d="M1300 576 H1340"/>
+    <path d="M1280 608 H1360"/>
+  </g>
+
+  <g opacity="0.28" fill="url(#lobster)">
+    <ellipse cx="800" cy="340" rx="140" ry="190"/>
+    <ellipse cx="800" cy="210" rx="58" ry="72"/>
+    <ellipse cx="800" cy="470" rx="90" ry="120"/>
+    <ellipse cx="720" cy="270" rx="24" ry="28"/>
+    <ellipse cx="880" cy="270" rx="24" ry="28"/>
+    <path d="M640 320 C560 280 520 220 500 160 C560 190 620 230 680 280 Z"/>
+    <path d="M960 320 C1040 280 1080 220 1100 160 C1040 190 980 230 920 280 Z"/>
+    <path d="M660 400 C600 420 560 460 540 520 C600 500 650 470 700 430 Z"/>
+    <path d="M940 400 C1000 420 1040 460 1060 520 C1000 500 950 470 900 430 Z"/>
+  </g>
+
+  <g opacity="0.2" stroke="#4F86FF" stroke-width="1.2">
+    <path d="M760 540 L760 610"/>
+    <path d="M800 540 L800 620"/>
+    <path d="M840 540 L840 610"/>
+  </g>
+</svg>

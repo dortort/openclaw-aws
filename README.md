@@ -1,7 +1,9 @@
-# OpenClaw Infra
+# OpenClaw AWS
 [![Deploy Main](https://github.com/dortort/openclaw-aws/actions/workflows/deploy-main.yml/badge.svg)](https://github.com/dortort/openclaw-aws/actions/workflows/deploy-main.yml)
 
-Infrastructure and deployment pipeline for OpenClaw (openclaw.ai), using a
+![OpenClaw AWS Header](docs/assets/openclaw-infra-header.png)
+
+Infrastructure and deployment pipeline for [OpenClaw](https://openclaw.ai), using a
 single-writer ECS+EFS architecture with immutable images and durable state.
 
 ## Architecture (high level)
@@ -25,7 +27,7 @@ scripts/                  # helpers
 
 ## Deployment
 
-See `docs/DEPLOYMENT.md` for a full step-by-step guide from zero.
+[See the full step-by-step deployment guide here.](docs/DEPLOYMENT.md)
 
 ## Bootstrap (run once)
 
