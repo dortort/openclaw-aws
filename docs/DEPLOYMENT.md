@@ -35,6 +35,15 @@ Fargate, EFS for state, and ECR for images.
      -var="enable_kms=true"
    ```
 
+   Or with `just`:
+   ```
+   just tf-bootstrap init
+   just tf-bootstrap apply \
+     -var="region=${AWS_REGION}" \
+     -var="state_bucket_name=<unique-state-bucket>" \
+     -var="enable_kms=true"
+   ```
+
    Capture outputs:
    - `state_bucket_name`
    - `kms_key_arn`
@@ -111,6 +120,16 @@ Fargate, EFS for state, and ECR for images.
    # If enable_kms=true in bootstrap
    # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
    terraform apply
+   ```
+
+   Or with `just`:
+   ```
+   just tf-main init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   just tf-main apply
    ```
 
    The CI/CD workflow sets `TF_VAR_gateway_image_digest` automatically. Locally,
