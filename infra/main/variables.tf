@@ -46,7 +46,14 @@ variable "health_check_path" {
 
 variable "gateway_image_digest" {
   type        = string
-  description = "ECR image digest for the gateway image"
+  description = "ECR image digest for the gateway image (set this or gateway_image_tag)"
+  default     = ""
+}
+
+variable "gateway_image_tag" {
+  type        = string
+  description = "ECR image tag for the gateway image (set this or gateway_image_digest)"
+  default     = ""
 }
 
 variable "ecr_repository_name" {

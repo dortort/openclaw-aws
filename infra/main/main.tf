@@ -5,8 +5,9 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  name_prefix = var.project_name
-  image_uri   = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}@${var.gateway_image_digest}"
+  name_prefix    = var.project_name
+  repository_url = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}"
+  image_uri      = var.gateway_image_tag != "" ? "${local.repository_url}:${var.gateway_image_tag}" : "${local.repository_url}@${var.gateway_image_digest}"
 }
 
 resource "aws_ecr_repository" "gateway" {

@@ -42,7 +42,7 @@ variable "cluster_name" {
 
 variable "image_uri" {
   type        = string
-  description = "Container image URI (digest pinned)"
+  description = "Container image URI (tag or digest)"
 }
 
 variable "container_port" {
