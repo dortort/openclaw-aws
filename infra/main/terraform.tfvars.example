@@ -9,6 +9,8 @@ app_port         = 8080
 health_check_path = "/health"
 
 ecr_repository_name  = "openclaw-gateway"
+# Set exactly one of the following:
+# gateway_image_tag   = "vX.Y.Z"
 gateway_image_digest = "sha256:REPLACE_WITH_DIGEST"
 
 ecs_cpu    = 512

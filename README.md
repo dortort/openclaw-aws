@@ -12,7 +12,7 @@ single-writer ECS+EFS architecture with immutable images and durable state.
 
 ## Architecture (high level)
 
-- ECR for container images (digest-pinned)
+- ECR for container images (digest-pinned by default, tag selection supported)
 - ECS on Fargate with `desired_count = 1` and serialized deployments
 - EFS mounted via access point at `/state`
 - Internal ALB reachable via optional Tailscale subnet router
@@ -54,14 +54,15 @@ Capture the outputs (state bucket, KMS key) and add them to
 ## CI/CD
 
 - PRs: Terraform lint/validate, security checks, and Docker lint/scan/tests
-- Main: build/push image, apply Terraform with digest, wait for ECS stable
+- Main: build/push image, tag release version, apply Terraform with digest, wait for ECS stable
 - Schedule: nightly rebuild + deploy at 00:00 UTC
 
 ## Docker image
 
 This repo builds the OpenClaw gateway image from upstream source. CI resolves the
 latest OpenClaw release tag via the GitHub API, checks it out before the Docker
-build, and passes the tag as `OPENCLAW_VERSION` to label the image.
+build, and passes the tag as `OPENCLAW_VERSION` to label the image. The pushed
+image is tagged with both the repository commit SHA and the OpenClaw release tag.
 
 Local build (manual):
 1. Fetch the latest release tag:

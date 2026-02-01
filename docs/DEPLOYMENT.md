@@ -64,7 +64,7 @@ Fargate, EFS for state, and ECR for images.
    Required in `terraform.tfvars`:
    - `region`
    - `private_subnet_cidrs`
-   - `gateway_image_digest` (set after the first image build)
+   - `gateway_image_digest` or `gateway_image_tag` (set after the first image build)
 
    Optional:
    - `enable_tailscale_router`, `tailscale_*` if you want tailnet access
@@ -85,22 +85,27 @@ Fargate, EFS for state, and ECR for images.
      aws ecr get-login-password --region "${AWS_REGION}" | \
        docker login --username AWS --password-stdin \
        "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-     IMAGE_TAG="sha-$(git rev-parse HEAD)"
+     IMAGE_TAG_SHA="sha-$(git rev-parse HEAD)"
+     IMAGE_TAG_RELEASE="${tag}"
+     IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
      docker build \
        --build-arg "OPENCLAW_VERSION=${tag}" \
-       -t "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+       -t "${IMAGE_URI}:${IMAGE_TAG_SHA}" \
+       -t "${IMAGE_URI}:${IMAGE_TAG_RELEASE}" \
        ./app
-     docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
+     docker push "${IMAGE_URI}:${IMAGE_TAG_SHA}"
+     docker push "${IMAGE_URI}:${IMAGE_TAG_RELEASE}"
      ```
    - Fetch the digest:
      ```
      aws ecr describe-images \
        --repository-name "${ECR_REPOSITORY}" \
-       --image-ids imageTag="${IMAGE_TAG}" \
+       --image-ids imageTag="${IMAGE_TAG_SHA}" \
        --query 'imageDetails[0].imageDigest' \
        --output text
      ```
-   - Set `gateway_image_digest` in `terraform.tfvars` to that `sha256:...` value.
+   - Set `gateway_image_digest` in `terraform.tfvars` to that `sha256:...` value, or
+     set `gateway_image_tag` to `${tag}` if you want to deploy by release tag.
 
 6. Initialize the Terraform backend and apply the main stack.
 
@@ -114,7 +119,7 @@ Fargate, EFS for state, and ECR for images.
    ```
 
    The CI/CD workflow sets `TF_VAR_gateway_image_digest` automatically. Locally,
-   make sure `gateway_image_digest` is set in `terraform.tfvars`.
+   make sure `gateway_image_digest` or `gateway_image_tag` is set in `terraform.tfvars`.
 
 7. Verify deployment health.
 
@@ -178,6 +183,8 @@ Fargate, EFS for state, and ECR for images.
    - Scheduled rebuild runs nightly at 00:00 UTC.
    - To deploy a specific image digest, set `TF_VAR_gateway_image_digest` and
      run `terraform apply`.
+   - To deploy a specific release tag, set `TF_VAR_gateway_image_tag` and run
+     `terraform apply`.
 
 10. Troubleshooting and rollback.
 
