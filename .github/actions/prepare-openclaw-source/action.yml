@@ -9,6 +9,9 @@ inputs:
     description: Destination path for checkout
     default: app/openclaw
     required: false
+  token:
+    description: GitHub token for API requests
+    required: false
 outputs:
   version:
     description: Resolved OpenClaw release tag
@@ -22,8 +25,13 @@ runs:
       run: |
         set -euo pipefail
         api_url="https://api.github.com/repos/${{ inputs.repo }}/releases/latest"
+        token="${{ inputs.token }}"
+        auth_header=()
+        if [[ -n "$token" ]]; then
+          auth_header=(-H "Authorization: Bearer $token")
+        fi
         tag="$(curl -fsSL \
-          -H "Authorization: Bearer ${GITHUB_TOKEN:-}" \
+          "${auth_header[@]}" \
           -H "Accept: application/vnd.github+json" \
           "$api_url" | jq -r .tag_name)"
         if [[ -z "$tag" || "$tag" == "null" ]]; then

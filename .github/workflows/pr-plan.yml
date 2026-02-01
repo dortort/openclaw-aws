@@ -72,6 +72,8 @@ jobs:
       - name: Prepare OpenClaw source
         id: openclaw
         uses: ./.github/actions/prepare-openclaw-source
+        with:
+          token: ${{ github.token }}
 
       - name: Hadolint
         uses: hadolint/hadolint-action@v3.1.0

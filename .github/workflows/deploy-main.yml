@@ -31,6 +31,8 @@ jobs:
       - name: Prepare OpenClaw source
         id: openclaw
         uses: ./.github/actions/prepare-openclaw-source
+        with:
+          token: ${{ github.token }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
