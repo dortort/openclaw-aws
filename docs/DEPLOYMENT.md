@@ -9,6 +9,7 @@ Fargate, EFS for state, and ECR for images.
 - AWS account with permissions to create VPC, ECS, ECR, EFS, ALB, and S3
 - An IAM role for GitHub Actions OIDC (for CI/CD deploys)
 - Tools: Terraform, AWS CLI, Docker, and `jq`
+- Optional: `just` (for `Justfile` shortcuts)
 - GitHub repository access and ability to set Actions secrets
 
 ## Step-by-step
@@ -128,15 +129,57 @@ Fargate, EFS for state, and ECR for images.
    export ALB_URL="http://<alb-dns>:8080/health"
    ./scripts/smoke.sh
    ```
+   Or with `just`:
+   ```
+   just smoke
+   ```
 
-8. Ongoing deploys.
+8. Run OpenClaw CLI commands (ECS Exec).
+
+   ECS Exec is enabled on the service. You can open a shell in the running task
+   and run commands like `openclaw channels login` against the deployed state
+   under `/state`.
+
+   Prereqs:
+   - AWS CLI v2 configured with credentials
+   - IAM permissions for `ecs:ExecuteCommand` and `ssm:StartSession`
+
+   Find the running task:
+   ```
+   aws ecs list-tasks \
+     --cluster "<cluster-name>" \
+     --service-name "<service-name>" \
+     --query "taskArns[0]" \
+     --output text
+   ```
+
+   Start a shell in the `gateway` container:
+   ```
+   aws ecs execute-command \
+     --cluster "<cluster-name>" \
+     --task "<task-arn>" \
+     --container "gateway" \
+     --interactive \
+     --command "/bin/sh"
+   ```
+   Or with `just`:
+   ```
+   just ecs-shell
+   ```
+
+   Then run the CLI:
+   ```
+   openclaw channels login
+   ```
+
+9. Ongoing deploys.
 
    - Push to `main` to trigger `Deploy Main`.
    - Scheduled rebuild runs nightly at 00:00 UTC.
    - To deploy a specific image digest, set `TF_VAR_gateway_image_digest` and
      run `terraform apply`.
 
-9. Troubleshooting and rollback.
+10. Troubleshooting and rollback.
 
    - ECS service not stable: check ECS service events and task logs.
    - ALB health failing: verify `app_port` and `health_check_path` in `terraform.tfvars`.

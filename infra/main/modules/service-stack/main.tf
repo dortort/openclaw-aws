@@ -62,6 +62,29 @@ resource "aws_iam_role_policy_attachment" "execution_secrets" {
   policy_arn = aws_iam_policy.secrets_access[0].arn
 }
 
+data "aws_iam_policy_document" "ecs_exec" {
+  statement {
+    actions = [
+      "ssm:UpdateInstanceInformation",
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "ecs_exec" {
+  name   = "${local.name_prefix}-ecs-exec"
+  policy = data.aws_iam_policy_document.ecs_exec.json
+}
+
+resource "aws_iam_role_policy_attachment" "task_ecs_exec" {
+  role       = aws_iam_role.task.name
+  policy_arn = aws_iam_policy.ecs_exec.arn
+}
+
 resource "aws_security_group" "alb" {
   name        = "${local.name_prefix}-alb-sg"
   description = "ALB ingress from Tailscale"
@@ -273,6 +296,7 @@ resource "aws_ecs_service" "this" {
   task_definition = aws_ecs_task_definition.this.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100

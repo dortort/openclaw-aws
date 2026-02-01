@@ -32,6 +32,8 @@ scripts/                  # helpers
 ## Deployment
 
 [See the full step-by-step deployment guide here.](docs/DEPLOYMENT.md)
+Need to run the OpenClaw CLI in the deployed task? See
+[ECS Exec instructions.](docs/DEPLOYMENT.md#run-openclaw-cli-commands-ecs-exec)
 
 ## Bootstrap (run once)
 
