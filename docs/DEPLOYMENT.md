@@ -163,7 +163,12 @@ Fargate, EFS for state, and ECR for images.
    - AWS CLI v2 configured with credentials
    - IAM permissions for `ecs:ExecuteCommand` and `ssm:StartSession`
 
-   Find the running task:
+   Quick option with `just` (uses Terraform outputs for cluster/service):
+   ```
+   just ecs-shell
+   ```
+
+   Manual option: find the running task:
    ```
    aws ecs list-tasks \
      --cluster "<cluster-name>" \
@@ -180,10 +185,6 @@ Fargate, EFS for state, and ECR for images.
      --container "gateway" \
      --interactive \
      --command "/bin/sh"
-   ```
-   Or with `just`:
-   ```
-   just ecs-shell
    ```
 
    Then run the CLI:
