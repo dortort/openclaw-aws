@@ -15,9 +15,9 @@ single-writer ECS+EFS architecture with immutable images and durable state.
 - ECR for container images (digest-pinned)
 - ECS on Fargate with `desired_count = 1` and serialized deployments
 - EFS mounted via access point at `/state`
-- Internal ALB reachable through Tailscale subnet router
+- Internal ALB reachable via optional Tailscale subnet router
 - Secrets from Secrets Manager or SSM injected into task env
-- Terraform remote state in S3 + DynamoDB lock table
+- Terraform remote state in S3 with native state locking
 
 ## Repo layout
 
@@ -39,7 +39,7 @@ scripts/                  # helpers
 2. `terraform init`
 3. `terraform apply`
 
-Capture the outputs (state bucket, lock table, KMS key) and add them to
+Capture the outputs (state bucket, KMS key) and add them to
 `infra/main/backend.tf` or set via `TF_VAR_*` and backend config.
 
 ## Main stack
