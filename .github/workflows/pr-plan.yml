@@ -1,0 +1,107 @@
+name: PR Plan
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform checks (${{ matrix.path }})
+    runs-on: ubuntu-latest
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+    strategy:
+      matrix:
+        path:
+          - infra/bootstrap
+          - infra/main
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: TFLint
+        run: |
+          tflint --init
+          tflint
+
+      - name: TFSec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ matrix.path }}
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ matrix.path }}
+
+      - name: Setup Infracost
+        if: env.INFRACOST_API_KEY != ''
+        uses: infracost/actions/setup@v3
+
+      - name: Infracost breakdown
+        if: env.INFRACOST_API_KEY != ''
+        run: infracost breakdown --path .
+
+  docker-tests:
+    name: Docker lint/scan/dgoss
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare OpenClaw source
+        id: openclaw
+        uses: ./.github/actions/prepare-openclaw-source
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/Dockerfile
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg "OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}" \
+            -t openclaw:pr \
+            ./app
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: openclaw:pr
+          format: table
+          exit-code: 1
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Install dgoss
+        run: |
+          curl -fsSL https://github.com/goss-org/goss/releases/latest/download/goss-linux-amd64 -o /usr/local/bin/goss
+          curl -fsSL https://github.com/goss-org/goss/releases/latest/download/dgoss -o /usr/local/bin/dgoss
+          chmod +x /usr/local/bin/goss /usr/local/bin/dgoss
+
+      - name: Run dgoss
+        env:
+          GOSS_FILES_PATH: app
+          GOSS_FILE: goss.yaml
+        run: dgoss run openclaw:pr

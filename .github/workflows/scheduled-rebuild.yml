@@ -1,0 +1,105 @@
+name: Scheduled Rebuild and Deploy
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  build_push:
+    name: Rebuild and push image
+    runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.digest.outputs.image_digest }}
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare OpenClaw source
+        id: openclaw
+        uses: ./.github/actions/prepare-openclaw-source
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image
+        run: |
+          IMAGE_TAG="sha-${GITHUB_SHA}"
+          docker build \
+            --build-arg "OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}" \
+            -t "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            ./app
+
+      - name: Push image
+        run: |
+          IMAGE_TAG="sha-${GITHUB_SHA}"
+          docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+      - name: Get image digest
+        id: digest
+        run: |
+          IMAGE_TAG="sha-${GITHUB_SHA}"
+          DIGEST=$(aws ecr describe-images \
+            --repository-name "${ECR_REPOSITORY}" \
+            --image-ids imageTag="${IMAGE_TAG}" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)
+          echo "image_digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+  terraform_apply:
+    name: Terraform apply (scheduled deploy)
+    runs-on: ubuntu-latest
+    needs: build_push
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: infra/main
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="region=${AWS_REGION}"
+
+      - name: Terraform apply
+        working-directory: infra/main
+        env:
+          TF_VAR_gateway_image_digest: ${{ needs.build_push.outputs.image_digest }}
+        run: terraform apply -auto-approve
+
+      - name: Wait for ECS stable
+        working-directory: infra/main
+        run: |
+          CLUSTER=$(terraform output -raw ecs_cluster_name)
+          SERVICE=$(terraform output -raw ecs_service_name)
+          aws ecs wait services-stable --cluster "${CLUSTER}" --services "${SERVICE}"

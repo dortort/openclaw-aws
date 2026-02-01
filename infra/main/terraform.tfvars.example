@@ -1,0 +1,25 @@
+region              = "REPLACE_WITH_REGION"
+project_name        = "openclaw"
+vpc_cidr            = "10.0.0.0/16"
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24"]
+enable_nat          = false
+
+app_port         = 8080
+health_check_path = "/health"
+
+ecr_repository_name  = "openclaw-gateway"
+gateway_image_digest = "sha256:REPLACE_WITH_DIGEST"
+
+ecs_cpu    = 512
+ecs_memory = 1024
+
+efs_posix_uid = 1000
+efs_posix_gid = 1000
+
+tailnet_cidrs      = []
+tailscale_ssh_cidrs = []
+enable_tailscale_router = false
+tailscale_router_ami_id = ""
+
+secret_env = {}

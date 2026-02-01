@@ -1,0 +1,41 @@
+name: Prepare OpenClaw source
+description: Resolve latest OpenClaw release and clone source
+inputs:
+  repo:
+    description: GitHub repo to clone
+    default: openclaw/openclaw
+    required: false
+  destination:
+    description: Destination path for checkout
+    default: app/openclaw
+    required: false
+outputs:
+  version:
+    description: Resolved OpenClaw release tag
+    value: ${{ steps.resolve.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Resolve latest release tag
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+        api_url="https://api.github.com/repos/${{ inputs.repo }}/releases/latest"
+        tag="$(curl -fsSL \
+          -H "Authorization: Bearer ${GITHUB_TOKEN:-}" \
+          -H "Accept: application/vnd.github+json" \
+          "$api_url" | jq -r .tag_name)"
+        if [[ -z "$tag" || "$tag" == "null" ]]; then
+          echo "Failed to resolve latest release tag from $api_url" >&2
+          exit 1
+        fi
+        echo "version=$tag" >> "$GITHUB_OUTPUT"
+    - name: Checkout OpenClaw source
+      shell: bash
+      run: |
+        set -euo pipefail
+        dest="${{ inputs.destination }}"
+        rm -rf "$dest"
+        git clone --depth 1 --branch "${{ steps.resolve.outputs.version }}" \
+          "https://github.com/${{ inputs.repo }}" "$dest"

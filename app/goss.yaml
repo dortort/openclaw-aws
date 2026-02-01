@@ -1,0 +1,12 @@
+file:
+  /app/config/openclaw.json:
+    exists: true
+    contains:
+      - "\"workspace\": \"/state/workspace\""
+port:
+  tcp:18789:
+    listening: true
+command:
+  entrypoint_running:
+    exec: /bin/cat /proc/1/comm
+    exit-status: 0

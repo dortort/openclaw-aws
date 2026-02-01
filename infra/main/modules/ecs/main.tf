@@ -1,0 +1,104 @@
+locals {
+  secret_env_list = [
+    for name, arn in var.secret_env : {
+      name      = name
+      valueFrom = arn
+    }
+  ]
+}
+
+resource "aws_ecs_cluster" "this" {
+  name = var.cluster_name
+}
+
+resource "aws_cloudwatch_log_group" "this" {
+  name              = "/ecs/${var.project_name}"
+  retention_in_days = 30
+}
+
+resource "aws_ecs_task_definition" "this" {
+  family                   = "${var.project_name}-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.cpu
+  memory                   = var.memory
+  execution_role_arn       = var.task_execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "gateway"
+      image     = var.image_uri
+      essential = true
+      portMappings = [
+        {
+          containerPort = var.container_port
+          hostPort      = var.container_port
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.this.name
+          awslogs-region        = data.aws_region.current.id
+          awslogs-stream-prefix = "gateway"
+        }
+      }
+      secrets                = local.secret_env_list
+      stopTimeout            = var.container_stop_timeout
+      readonlyRootFilesystem = false
+      mountPoints = [
+        {
+          sourceVolume  = "state"
+          containerPath = "/state"
+          readOnly      = false
+        }
+      ]
+    }
+  ])
+
+  volume {
+    name = "state"
+
+    efs_volume_configuration {
+      file_system_id     = var.efs_file_system_id
+      transit_encryption = "ENABLED"
+
+      authorization_config {
+        access_point_id = var.efs_access_point_id
+        iam             = "ENABLED"
+      }
+    }
+  }
+}
+
+data "aws_region" "current" {}
+
+resource "aws_ecs_service" "this" {
+  name            = "${var.project_name}-service"
+  cluster         = aws_ecs_cluster.this.id
+  task_definition = aws_ecs_task_definition.this.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [var.security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = var.target_group_arn
+    container_name   = "gateway"
+    container_port   = var.container_port
+  }
+}
