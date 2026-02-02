@@ -99,13 +99,42 @@ jobs:
             -backend-config="bucket=${TF_STATE_BUCKET}" \
             -backend-config="region=${AWS_REGION}"
 
+      - name: Terraform plan
+        working-directory: infra/main
+        env:
+          TF_VAR_gateway_image_digest: ${{ needs.build_push.outputs.image_digest }}
+        run: |
+          set -o pipefail
+          terraform plan -no-color -out=tfplan | tee tfplan.log
+
+      - name: Render Terraform plan
+        working-directory: infra/main
+        run: |
+          set -o pipefail
+          terraform show -no-color tfplan | tee tfplan.txt
+
       - name: Terraform apply
         working-directory: infra/main
         env:
           TF_VAR_gateway_image_digest: ${{ needs.build_push.outputs.image_digest }}
-        run: terraform apply -auto-approve
+        run: |
+          set -o pipefail
+          terraform apply -auto-approve tfplan | tee tfapply.log
+
+      - name: Upload Terraform artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-main-${{ github.run_id }}
+          path: |
+            infra/main/tfplan
+            infra/main/tfplan.log
+            infra/main/tfplan.txt
+            infra/main/tfapply.log
+          if-no-files-found: ignore
 
       - name: Wait for ECS stable
+        if: success()
         working-directory: infra/main
         run: |
           CLUSTER=$(terraform output -raw ecs_cluster_name)
