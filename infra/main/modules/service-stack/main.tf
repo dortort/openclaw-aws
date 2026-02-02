@@ -7,7 +7,8 @@ locals {
       valueFrom = arn
     }
   ]
-  cluster_name = var.cluster_name != "" ? var.cluster_name : "${var.project_name}-cluster"
+  cluster_name       = var.cluster_name != "" ? var.cluster_name : "${var.project_name}-cluster"
+  private_subnet_ids = sort(values(var.private_subnet_id_map))
 }
 
 data "aws_region" "current" {}
@@ -160,7 +161,7 @@ resource "aws_lb" "this" {
   internal           = true
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = var.private_subnet_ids
+  subnets            = local.private_subnet_ids
 }
 
 resource "aws_lb_target_group" "this" {
@@ -200,7 +201,7 @@ resource "aws_efs_file_system" "this" {
 }
 
 resource "aws_efs_mount_target" "this" {
-  for_each        = toset(var.private_subnet_ids)
+  for_each        = var.private_subnet_id_map
   file_system_id  = aws_efs_file_system.this.id
   subnet_id       = each.value
   security_groups = [aws_security_group.efs.id]
@@ -291,11 +292,11 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name            = "${local.name_prefix}-service"
-  cluster         = aws_ecs_cluster.this.id
-  task_definition = aws_ecs_task_definition.this.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                   = "${local.name_prefix}-service"
+  cluster                = aws_ecs_cluster.this.id
+  task_definition        = aws_ecs_task_definition.this.arn
+  desired_count          = 1
+  launch_type            = "FARGATE"
   enable_execute_command = true
 
   deployment_minimum_healthy_percent = 0
@@ -307,7 +308,7 @@ resource "aws_ecs_service" "this" {
   }
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = local.private_subnet_ids
     security_groups  = [aws_security_group.ecs.id]
     assign_public_ip = false
   }

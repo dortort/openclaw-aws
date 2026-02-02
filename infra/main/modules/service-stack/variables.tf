@@ -8,9 +8,9 @@ variable "vpc_id" {
   description = "VPC ID"
 }
 
-variable "private_subnet_ids" {
-  type        = list(string)
-  description = "Private subnet IDs for ALB, ECS, and EFS"
+variable "private_subnet_id_map" {
+  type        = map(string)
+  description = "Private subnet IDs keyed by stable index"
 }
 
 variable "app_port" {

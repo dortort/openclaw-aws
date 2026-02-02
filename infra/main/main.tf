@@ -39,7 +39,7 @@ resource "aws_ecr_lifecycle_policy" "gateway" {
         rulePriority = 2
         description  = "Keep last 50 tagged images"
         selection = {
-          tagStatus   = "tagged"
+          tagStatus = "tagged"
           tagPrefixList = [
             "sha-",
             "v"
@@ -91,7 +91,7 @@ module "service_stack" {
   source                             = "./modules/service-stack"
   project_name                       = local.name_prefix
   vpc_id                             = module.vpc.vpc_id
-  private_subnet_ids                 = module.vpc.private_subnet_ids
+  private_subnet_id_map              = module.vpc.private_subnet_id_map
   app_port                           = var.app_port
   health_check_path                  = var.health_check_path
   tailnet_cidrs                      = var.tailnet_cidrs
