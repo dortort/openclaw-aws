@@ -43,24 +43,21 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build image
-        run: |
-          IMAGE_TAG_SHA="sha-${GITHUB_SHA}"
-          IMAGE_TAG_RELEASE="${{ steps.openclaw.outputs.version }}"
-          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
-          docker build \
-            --build-arg "OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}" \
-            -t "${IMAGE_URI}:${IMAGE_TAG_SHA}" \
-            -t "${IMAGE_URI}:${IMAGE_TAG_RELEASE}" \
-            ./app
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Push image
-        run: |
-          IMAGE_TAG_SHA="sha-${GITHUB_SHA}"
-          IMAGE_TAG_RELEASE="${{ steps.openclaw.outputs.version }}"
-          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
-          docker push "${IMAGE_URI}:${IMAGE_TAG_SHA}"
-          docker push "${IMAGE_URI}:${IMAGE_TAG_RELEASE}"
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: true
+          build-args: |
+            OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}
+          tags: |
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+            ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.openclaw.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Get image digest
         id: digest
