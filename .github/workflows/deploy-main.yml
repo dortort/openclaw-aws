@@ -78,7 +78,6 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
       TF_STATE_KMS_KEY_ARN: ${{ secrets.TF_STATE_KMS_KEY_ARN }}
-      TF_VAR_region: ${{ secrets.AWS_REGION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -110,11 +109,12 @@ jobs:
 
       - name: Terraform plan
         working-directory: infra/main
-        env:
-          TF_VAR_gateway_image_digest: ${{ needs.build_push.outputs.image_digest }}
         run: |
           set -o pipefail
-          terraform plan -input=false -no-color -out=tfplan | tee tfplan.log
+          terraform plan -input=false -no-color -out=tfplan \
+            -var "region=${AWS_REGION}" \
+            -var "gateway_image_digest=${{ needs.build_push.outputs.image_digest }}" \
+            | tee tfplan.log
 
       - name: Render Terraform plan
         working-directory: infra/main
@@ -124,11 +124,12 @@ jobs:
 
       - name: Terraform apply
         working-directory: infra/main
-        env:
-          TF_VAR_gateway_image_digest: ${{ needs.build_push.outputs.image_digest }}
         run: |
           set -o pipefail
-          terraform apply -input=false -auto-approve tfplan | tee tfapply.log
+          terraform apply -input=false -auto-approve tfplan \
+            -var "region=${AWS_REGION}" \
+            -var "gateway_image_digest=${{ needs.build_push.outputs.image_digest }}" \
+            | tee tfapply.log
 
       - name: Upload Terraform artifacts
         if: always()
