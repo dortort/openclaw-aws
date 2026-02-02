@@ -40,6 +40,10 @@ resource "aws_ecr_lifecycle_policy" "gateway" {
         description  = "Keep last 50 tagged images"
         selection = {
           tagStatus   = "tagged"
+          tagPrefixList = [
+            "sha-",
+            "v"
+          ]
           countType   = "imageCountMoreThan"
           countNumber = 50
         }

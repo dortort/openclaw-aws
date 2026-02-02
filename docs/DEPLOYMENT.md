@@ -17,8 +17,8 @@ Fargate, EFS for state, and ECR for images.
 1. Clone the repo and choose an AWS region.
 
    ```
-   git clone https://github.com/<your-org>/openclaw-infra
-   cd openclaw-infra
+   git clone https://github.com/dortort/openclaw-aws
+   cd openclaw-aws
    export AWS_REGION="us-east-1"
    ```
 
@@ -27,18 +27,18 @@ Fargate, EFS for state, and ECR for images.
    This creates the S3 state bucket and KMS key (optional).
 
    ```
-   cd infra/bootstrap
-   terraform init
-   terraform apply \
+   just tf-bootstrap init
+   just tf-bootstrap apply \
      -var="region=${AWS_REGION}" \
      -var="state_bucket_name=<unique-state-bucket>" \
      -var="enable_kms=true"
    ```
 
-   Or with `just`:
+   Or with Terraform directly:
    ```
-   just tf-bootstrap init
-   just tf-bootstrap apply \
+   cd infra/bootstrap
+   terraform init
+   terraform apply \
      -var="region=${AWS_REGION}" \
      -var="state_bucket_name=<unique-state-bucket>" \
      -var="enable_kms=true"
@@ -54,7 +54,7 @@ Fargate, EFS for state, and ECR for images.
    - `AWS_REGION`
    - `AWS_ACCOUNT_ID`
    - `AWS_ROLE_ARN` (OIDC role for GitHub Actions)
-   - `ECR_REPOSITORY` (default: `openclaw-gateway`)
+   - `ECR_REPOSITORY` (default: `openclaw-gateway`, must match `ecr_repository_name`)
    - `TF_STATE_BUCKET` (from bootstrap output)
    - `TF_STATE_KMS_KEY_ARN` (required when `enable_kms=true`)
 
@@ -65,6 +65,12 @@ Fargate, EFS for state, and ECR for images.
 
    Copy the example file and update values:
 
+   ```
+   just tf-main init
+   cp infra/main/terraform.tfvars.example infra/main/terraform.tfvars
+   ```
+
+   Or with Terraform directly:
    ```
    cd ../main
    cp terraform.tfvars.example terraform.tfvars
@@ -79,7 +85,62 @@ Fargate, EFS for state, and ECR for images.
    - `enable_tailscale_router`, `tailscale_*` if you want tailnet access
    - `secret_env` map of env var names to Secrets Manager or SSM ARNs
 
-5. Build and push the first image.
+5. First-run dependency: create the ECR repository.
+
+   The ECR repo is created by the main stack (`aws_ecr_repository.gateway`). CI
+   cannot push until it exists.
+
+   Option A: Create the repo via Terraform (recommended):
+   ```
+   just tf-main init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   just tf-main apply \
+     -target aws_ecr_repository.gateway \
+     -target aws_ecr_lifecycle_policy.gateway
+   ```
+
+   Or with Terraform directly:
+   ```
+   terraform init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   terraform apply \
+     -target aws_ecr_repository.gateway \
+     -target aws_ecr_lifecycle_policy.gateway
+   ```
+
+   Option B: Create the repo manually, then import into state:
+   ```
+   just tf-main init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   aws ecr create-repository \
+     --repository-name "${ECR_REPOSITORY}" \
+     --region "${AWS_REGION}"
+   terraform import aws_ecr_repository.gateway "${ECR_REPOSITORY}"
+   ```
+
+   Or with Terraform directly:
+   ```
+   terraform init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   aws ecr create-repository \
+     --repository-name "${ECR_REPOSITORY}" \
+     --region "${AWS_REGION}"
+   terraform import aws_ecr_repository.gateway "${ECR_REPOSITORY}"
+   ```
+
+6. Build and push the first image.
 
    Option A: CI/CD (recommended)
    - Set the secrets in step 3 and run the `Deploy Main` workflow, or push to
@@ -116,18 +177,8 @@ Fargate, EFS for state, and ECR for images.
    - Set `gateway_image_digest` in `terraform.tfvars` to that `sha256:...` value, or
      set `gateway_image_tag` to `${tag}` if you want to deploy by release tag.
 
-6. Initialize the Terraform backend and apply the main stack.
+7. Initialize the Terraform backend and apply the main stack.
 
-   ```
-   terraform init \
-     -backend-config="bucket=${TF_STATE_BUCKET}" \
-     -backend-config="region=${AWS_REGION}"
-   # If enable_kms=true in bootstrap
-   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
-   terraform apply
-   ```
-
-   Or with `just`:
    ```
    just tf-main init \
      -backend-config="bucket=${TF_STATE_BUCKET}" \
@@ -137,10 +188,20 @@ Fargate, EFS for state, and ECR for images.
    just tf-main apply
    ```
 
+   Or with Terraform directly:
+   ```
+   terraform init \
+     -backend-config="bucket=${TF_STATE_BUCKET}" \
+     -backend-config="region=${AWS_REGION}"
+   # If enable_kms=true in bootstrap
+   # -backend-config="kms_key_id=${TF_STATE_KMS_KEY_ARN}"
+   terraform apply
+   ```
+
    The CI/CD workflow sets `TF_VAR_gateway_image_digest` automatically. Locally,
    make sure `gateway_image_digest` or `gateway_image_tag` is set in `terraform.tfvars`.
 
-7. Verify deployment health.
+8. Verify deployment health.
 
    Get the internal ALB DNS name:
    ```
@@ -158,7 +219,7 @@ Fargate, EFS for state, and ECR for images.
    just smoke
    ```
 
-8. Run OpenClaw CLI commands (ECS Exec).
+9. Run OpenClaw CLI commands (ECS Exec).
 
    ECS Exec is enabled on the service. You can open a shell in the running task
    and run commands like `openclaw channels login` against the deployed state
@@ -196,7 +257,7 @@ Fargate, EFS for state, and ECR for images.
    openclaw channels login
    ```
 
-9. Ongoing deploys.
+10. Ongoing deploys.
 
    - Push to `main` to trigger `Deploy Main`.
    - Scheduled rebuild runs nightly at 00:00 UTC.
@@ -205,7 +266,7 @@ Fargate, EFS for state, and ECR for images.
    - To deploy a specific release tag, set `TF_VAR_gateway_image_tag` and run
      `terraform apply`.
 
-10. Troubleshooting and rollback.
+11. Troubleshooting and rollback.
 
    - ECS service not stable: check ECS service events and task logs.
    - ALB health failing: verify `app_port` and `health_check_path` in `terraform.tfvars`.

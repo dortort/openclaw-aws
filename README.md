@@ -37,6 +37,11 @@ Need to run the OpenClaw CLI in the deployed task? See
 
 ## Bootstrap (run once)
 
+1. `just tf-bootstrap init`
+2. `just tf-bootstrap apply`
+
+Or with Terraform directly:
+
 1. `cd infra/bootstrap`
 2. `terraform init`
 3. `terraform apply`
@@ -45,6 +50,12 @@ Capture the outputs (state bucket, KMS key) and add them to
 `infra/main/backend.tf` or set via `TF_VAR_*` and backend config.
 
 ## Main stack
+
+1. `just tf-main init`
+2. `just tf-main plan`
+3. `just tf-main apply`
+
+Or with Terraform directly:
 
 1. `cd infra/main`
 2. `terraform init`
