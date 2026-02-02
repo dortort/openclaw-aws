@@ -1,9 +1,12 @@
+# syntax=docker/dockerfile:1
 FROM node:22-bookworm AS build
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 ARG OPENCLAW_VERSION=""
 
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  apt-get update && \
   apt-get install -y --no-install-recommends ca-certificates curl git && \
   if [ -n "$OPENCLAW_DOCKER_APT_PACKAGES" ]; then \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $OPENCLAW_DOCKER_APT_PACKAGES; \
@@ -19,13 +22,16 @@ RUN corepack enable
 
 WORKDIR /app
 
+ENV PNPM_STORE_PATH=/root/.local/share/pnpm/store
+
 # Cache dependencies unless package metadata changes
 COPY openclaw/package.json openclaw/pnpm-lock.yaml openclaw/pnpm-workspace.yaml openclaw/.npmrc ./
 COPY openclaw/ui/package.json ./ui/package.json
 COPY openclaw/patches ./patches
 COPY openclaw/scripts ./scripts
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
+  pnpm install --frozen-lockfile
 
 COPY openclaw/. .
 RUN OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build
@@ -39,7 +45,9 @@ ARG OPENCLAW_VERSION=""
 LABEL org.opencontainers.image.source="https://github.com/openclaw/openclaw"
 LABEL org.opencontainers.image.version="${OPENCLAW_VERSION}"
 
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+  apt-get update && \
   apt-get install -y --no-install-recommends ca-certificates && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*

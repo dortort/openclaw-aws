@@ -80,12 +80,20 @@ jobs:
         with:
           dockerfile: app/Dockerfile
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build image
-        run: |
-          docker build \
-            --build-arg "OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}" \
-            -t openclaw:pr \
-            ./app
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          push: false
+          build-args: |
+            OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}
+          tags: |
+            openclaw:pr
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Trivy scan
         uses: aquasecurity/trivy-action@0.28.0
