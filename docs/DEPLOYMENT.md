@@ -34,6 +34,15 @@ Fargate, EFS for state, and ECR for images.
      -var="enable_kms=true"
    ```
 
+   If you plan to use GitHub Actions with KMS-enabled state, pass the OIDC role:
+   ```
+   just tf-bootstrap apply \
+     -var="region=${AWS_REGION}" \
+     -var="state_bucket_name=<unique-state-bucket>" \
+     -var="enable_kms=true" \
+     -var="github_actions_role_arn=${AWS_ROLE_ARN}"
+   ```
+
    Or with Terraform directly:
    ```
    cd infra/bootstrap
@@ -42,6 +51,15 @@ Fargate, EFS for state, and ECR for images.
      -var="region=${AWS_REGION}" \
      -var="state_bucket_name=<unique-state-bucket>" \
      -var="enable_kms=true"
+   ```
+
+   With GitHub Actions OIDC:
+   ```
+   terraform apply \
+     -var="region=${AWS_REGION}" \
+     -var="state_bucket_name=<unique-state-bucket>" \
+     -var="enable_kms=true" \
+     -var="github_actions_role_arn=${AWS_ROLE_ARN}"
    ```
 
    Capture outputs:

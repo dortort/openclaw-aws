@@ -18,11 +18,54 @@ variable "enable_kms" {
   default     = true
 }
 
+variable "github_actions_role_arn" {
+  type        = string
+  description = "IAM role ARN for GitHub Actions to use the state KMS key"
+  default     = ""
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "tf_state_kms" {
+  statement {
+    sid    = "AllowRootAccess"
+    effect = "Allow"
+    actions = [
+      "kms:*"
+    ]
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+    resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.github_actions_role_arn != "" ? [var.github_actions_role_arn] : []
+    content {
+      sid    = "AllowGitHubActionsUse"
+      effect = "Allow"
+      actions = [
+        "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:GenerateDataKey",
+        "kms:DescribeKey"
+      ]
+      principals {
+        type        = "AWS"
+        identifiers = [statement.value]
+      }
+      resources = ["*"]
+    }
+  }
+}
+
 resource "aws_kms_key" "tf_state" {
   count                   = var.enable_kms ? 1 : 0
   description             = "Terraform state KMS key"
   deletion_window_in_days = 30
   enable_key_rotation     = true
+  policy                  = data.aws_iam_policy_document.tf_state_kms.json
 }
 
 resource "aws_kms_alias" "tf_state" {
@@ -59,4 +102,3 @@ resource "aws_s3_bucket_public_access_block" "tf_state" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-
