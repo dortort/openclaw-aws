@@ -56,7 +56,7 @@ Fargate, EFS for state, and ECR for images.
    - `AWS_ROLE_ARN` (OIDC role for GitHub Actions)
    - `ECR_REPOSITORY` (default: `openclaw-gateway`)
    - `TF_STATE_BUCKET` (from bootstrap output)
-  - `TF_STATE_KMS_KEY_ARN` (required when `enable_kms=true`)
+   - `TF_STATE_KMS_KEY_ARN` (required when `enable_kms=true`)
 
    Optional for PR checks:
    - `INFRACOST_API_KEY`
