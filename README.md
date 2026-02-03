@@ -86,7 +86,7 @@ Local build (manual):
 Runtime knobs:
 - `OPENCLAW_GATEWAY_BIND` (default: `lan`)
 - `OPENCLAW_GATEWAY_PORT` (default: `18789`)
-- `OPENCLAW_GATEWAY_TOKEN` (required for non-loopback binds)
+- `OPENCLAW_GATEWAY_TOKEN` (required for non-loopback binds; injected via Secrets Manager)
 - Persistent state is under `/state` (config in `/state/.openclaw/openclaw.json`).
 
 ## Secrets/variables

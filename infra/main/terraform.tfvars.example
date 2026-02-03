@@ -12,6 +12,8 @@ ecr_repository_name  = "openclaw-gateway"
 # Set exactly one of the following:
 # gateway_image_tag   = "vX.Y.Z"
 gateway_image_digest = "sha256:REPLACE_WITH_DIGEST"
+# Provide via TF_VAR_gateway_token or set here.
+# gateway_token = "REPLACE_WITH_TOKEN"
 
 ecs_cpu    = 512
 ecs_memory = 1024

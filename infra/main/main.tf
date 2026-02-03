@@ -5,9 +5,11 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  name_prefix    = var.project_name
-  repository_url = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}"
-  image_uri      = var.gateway_image_tag != "" ? "${local.repository_url}:${var.gateway_image_tag}" : "${local.repository_url}@${var.gateway_image_digest}"
+  name_prefix              = var.project_name
+  repository_url           = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${var.ecr_repository_name}"
+  image_uri                = var.gateway_image_tag != "" ? "${local.repository_url}:${var.gateway_image_tag}" : "${local.repository_url}@${var.gateway_image_digest}"
+  gateway_token_enabled    = var.gateway_token != ""
+  gateway_token_secret_arn = local.gateway_token_enabled ? aws_secretsmanager_secret.gateway_token[0].arn : null
 }
 
 resource "aws_ecr_repository" "gateway" {
@@ -53,6 +55,17 @@ resource "aws_ecr_lifecycle_policy" "gateway" {
       }
     ]
   })
+}
+
+resource "aws_secretsmanager_secret" "gateway_token" {
+  count = local.gateway_token_enabled ? 1 : 0
+  name  = "${local.name_prefix}-gateway-token"
+}
+
+resource "aws_secretsmanager_secret_version" "gateway_token" {
+  count         = local.gateway_token_enabled ? 1 : 0
+  secret_id     = aws_secretsmanager_secret.gateway_token[0].id
+  secret_string = var.gateway_token
 }
 
 module "vpc" {
@@ -158,7 +171,10 @@ module "service_stack" {
   memory                             = var.ecs_memory
   efs_posix_uid                      = var.efs_posix_uid
   efs_posix_gid                      = var.efs_posix_gid
-  secret_env                         = var.secret_env
+  secret_env = merge(
+    var.secret_env,
+    local.gateway_token_enabled ? { OPENCLAW_GATEWAY_TOKEN = local.gateway_token_secret_arn } : {}
+  )
 }
 
 module "tailscale_router" {

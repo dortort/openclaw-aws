@@ -133,3 +133,10 @@ variable "secret_env" {
   description = "Map of environment variable name to Secrets Manager or SSM parameter ARN"
   default     = {}
 }
+
+variable "gateway_token" {
+  type        = string
+  description = "OpenClaw gateway token (stored in Secrets Manager)"
+  default     = ""
+  sensitive   = true
+}

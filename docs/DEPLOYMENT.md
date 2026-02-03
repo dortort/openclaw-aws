@@ -75,6 +75,7 @@ Fargate, EFS for state, and ECR for images.
    - `ECR_REPOSITORY` (default: `openclaw-gateway`, must match `ecr_repository_name`)
    - `TF_STATE_BUCKET` (from bootstrap output)
    - `TF_STATE_KMS_KEY_ARN` (required when `enable_kms=true`)
+   - `OPENCLAW_GATEWAY_TOKEN` (gateway auth token)
 
    Optional for PR checks:
    - `INFRACOST_API_KEY`
@@ -102,6 +103,7 @@ Fargate, EFS for state, and ECR for images.
    Optional:
    - `enable_tailscale_router`, `tailscale_*` if you want tailnet access
    - `secret_env` map of env var names to Secrets Manager or SSM ARNs
+   - `gateway_token` if you want to set the token in `terraform.tfvars` (preferred: pass via `TF_VAR_gateway_token`)
 
 5. First-run dependency: create the ECR repository.
 
@@ -218,6 +220,8 @@ Fargate, EFS for state, and ECR for images.
 
    The CI/CD workflow sets `TF_VAR_gateway_image_digest` automatically. Locally,
    make sure `gateway_image_digest` or `gateway_image_tag` is set in `terraform.tfvars`.
+   Set `TF_VAR_gateway_token` (or `gateway_token` in `terraform.tfvars`) so the gateway
+   can start with auth enabled.
 
 8. Verify deployment health.
 

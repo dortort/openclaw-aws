@@ -255,6 +255,12 @@ resource "aws_ecs_task_definition" "this" {
           protocol      = "tcp"
         }
       ]
+      environment = [
+        {
+          name  = "OPENCLAW_GATEWAY_PORT"
+          value = tostring(var.container_port)
+        }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
