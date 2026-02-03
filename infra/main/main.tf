@@ -131,6 +131,24 @@ resource "aws_vpc_endpoint" "logs" {
   private_dns_enabled = true
 }
 
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${var.region}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "kms" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${var.region}.kms"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+}
+
 resource "aws_security_group" "tailscale_router" {
   name        = "${local.name_prefix}-tailscale-sg"
   description = "Tailscale subnet router SG"
