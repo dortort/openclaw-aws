@@ -179,6 +179,7 @@ module "service_stack" {
   private_subnet_id_map              = module.vpc.private_subnet_id_map
   app_port                           = var.app_port
   health_check_path                  = var.health_check_path
+  health_check_grace_period_seconds  = var.health_check_grace_period_seconds
   tailnet_cidrs                      = var.tailnet_cidrs
   tailscale_router_security_group_id = aws_security_group.tailscale_router.id
   cluster_name                       = "${local.name_prefix}-cluster"

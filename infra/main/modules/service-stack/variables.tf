@@ -23,6 +23,11 @@ variable "health_check_path" {
   description = "Target group health check path"
 }
 
+variable "health_check_grace_period_seconds" {
+  type        = number
+  description = "Grace period for ECS health checks to allow startup"
+}
+
 variable "tailnet_cidrs" {
   type        = list(string)
   description = "Tailnet CIDRs allowed to reach the ALB"

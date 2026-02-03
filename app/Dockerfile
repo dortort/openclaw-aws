@@ -75,7 +75,7 @@ RUN chmod +x /app/entrypoint.sh
 
 USER node
 
-EXPOSE 18789 18790
+EXPOSE 18789
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD sh -lc 'if [ -n "$OPENCLAW_GATEWAY_TOKEN" ]; then node dist/index.js health --token "$OPENCLAW_GATEWAY_TOKEN"; else node dist/index.js health; fi'
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -298,12 +298,13 @@ resource "aws_ecs_task_definition" "this" {
 }
 
 resource "aws_ecs_service" "this" {
-  name                   = "${local.name_prefix}-service"
-  cluster                = aws_ecs_cluster.this.id
-  task_definition        = aws_ecs_task_definition.this.arn
-  desired_count          = 1
-  launch_type            = "FARGATE"
-  enable_execute_command = true
+  name                              = "${local.name_prefix}-service"
+  cluster                           = aws_ecs_cluster.this.id
+  task_definition                   = aws_ecs_task_definition.this.arn
+  desired_count                     = 1
+  health_check_grace_period_seconds = var.health_check_grace_period_seconds
+  launch_type                       = "FARGATE"
+  enable_execute_command            = true
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100

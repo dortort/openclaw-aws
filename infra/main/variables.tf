@@ -35,13 +35,19 @@ variable "enable_nat" {
 variable "app_port" {
   type        = number
   description = "Container and target group port"
-  default     = 8080
+  default     = 18789
 }
 
 variable "health_check_path" {
   type        = string
   description = "ALB target group health check path"
-  default     = "/health"
+  default     = "/"
+}
+
+variable "health_check_grace_period_seconds" {
+  type        = number
+  description = "Grace period for ECS health checks to allow startup"
+  default     = 180
 }
 
 variable "gateway_image_digest" {
