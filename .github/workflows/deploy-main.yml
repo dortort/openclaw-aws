@@ -126,10 +126,7 @@ jobs:
         working-directory: infra/main
         run: |
           set -o pipefail
-          terraform apply -input=false -auto-approve tfplan \
-            -var "region=${AWS_REGION}" \
-            -var "gateway_image_digest=${{ needs.build_push.outputs.image_digest }}" \
-            | tee tfapply.log
+          terraform apply -input=false -auto-approve tfplan | tee tfapply.log
 
       - name: Upload Terraform artifacts
         if: always()
