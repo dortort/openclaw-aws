@@ -24,6 +24,7 @@ single-writer ECS+EFS architecture with immutable images and durable state.
 app/                      # config-only app assets
 infra/bootstrap/          # one-time backend bootstrap
 infra/main/               # main stack composed from modules
+agentbound/               # MCP server access control (experimental)
 .github/workflows/        # CI/CD
 scripts/                  # helpers
 ```
@@ -87,6 +88,15 @@ Runtime knobs:
 - `OPENCLAW_GATEWAY_PORT` (default: `18789`)
 - `OPENCLAW_GATEWAY_TOKEN` (required for non-loopback binds; injected via Secrets Manager)
 - Persistent state is under `/state` (config in `/state/.openclaw/openclaw.json`).
+
+## AgentBound (experimental)
+
+Access control framework for MCP servers, inspired by
+[Securing AI Agent Execution](https://arxiv.org/abs/2510.21236) (Bühler et al., 2025).
+Provides declarative permission manifests, Docker-based sandbox enforcement, and
+automated manifest generation via static analysis.
+
+[See the AgentBound documentation.](agentbound/README.md)
 
 ## Secrets/variables
 
