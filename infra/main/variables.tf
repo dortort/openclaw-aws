@@ -70,14 +70,24 @@ variable "ecr_repository_name" {
 
 variable "ecs_cpu" {
   type        = number
-  description = "ECS task CPU units"
+  description = "Fargate task CPU units (256, 512, 1024, 2048, 4096, 8192, 16384)"
   default     = 512
+
+  validation {
+    condition     = contains([256, 512, 1024, 2048, 4096, 8192, 16384], var.ecs_cpu)
+    error_message = "ecs_cpu must be a valid Fargate CPU value: 256, 512, 1024, 2048, 4096, 8192, or 16384."
+  }
 }
 
 variable "ecs_memory" {
   type        = number
-  description = "ECS task memory in MiB"
+  description = "Fargate task memory in MiB (valid range depends on ecs_cpu)"
   default     = 1024
+
+  validation {
+    condition     = var.ecs_memory >= 512 && var.ecs_memory <= 122880
+    error_message = "ecs_memory must be between 512 and 122880 MiB."
+  }
 }
 
 variable "container_stop_timeout" {
