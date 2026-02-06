@@ -9,6 +9,22 @@ locals {
   ]
   cluster_name       = var.cluster_name != "" ? var.cluster_name : "${var.project_name}-cluster"
   private_subnet_ids = sort(values(var.private_subnet_id_map))
+
+  # Valid Fargate memory ranges per CPU value: [min, max, step]
+  fargate_memory_limits = {
+    256   = { min = 512, max = 2048, step = 512 }
+    512   = { min = 1024, max = 4096, step = 1024 }
+    1024  = { min = 2048, max = 8192, step = 1024 }
+    2048  = { min = 4096, max = 16384, step = 1024 }
+    4096  = { min = 8192, max = 30720, step = 1024 }
+    8192  = { min = 16384, max = 61440, step = 4096 }
+    16384 = { min = 32768, max = 122880, step = 8192 }
+  }
+
+  mem_limits       = local.fargate_memory_limits[var.cpu]
+  memory_in_range  = var.memory >= local.mem_limits.min && var.memory <= local.mem_limits.max
+  memory_on_step   = (var.memory - local.mem_limits.min) % local.mem_limits.step == 0
+  valid_cpu_memory = local.memory_in_range && local.memory_on_step
 }
 
 data "aws_region" "current" {}
@@ -242,6 +258,13 @@ resource "aws_ecs_task_definition" "this" {
   memory                   = var.memory
   execution_role_arn       = aws_iam_role.execution.arn
   task_role_arn            = aws_iam_role.task.arn
+
+  lifecycle {
+    precondition {
+      condition     = local.valid_cpu_memory
+      error_message = "Invalid Fargate cpu/memory combination: cpu=${var.cpu}, memory=${var.memory}. For ${var.cpu} CPU units, memory must be between ${local.mem_limits.min} and ${local.mem_limits.max} MiB in ${local.mem_limits.step} MiB increments."
+    }
+  }
 
   container_definitions = jsonencode([
     {

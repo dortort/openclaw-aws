@@ -63,12 +63,22 @@ variable "container_stop_timeout" {
 
 variable "cpu" {
   type        = number
-  description = "Task CPU"
+  description = "Fargate task CPU units (256, 512, 1024, 2048, 4096, 8192, 16384)"
+
+  validation {
+    condition     = contains([256, 512, 1024, 2048, 4096, 8192, 16384], var.cpu)
+    error_message = "cpu must be a valid Fargate CPU value: 256, 512, 1024, 2048, 4096, 8192, or 16384."
+  }
 }
 
 variable "memory" {
   type        = number
-  description = "Task memory"
+  description = "Fargate task memory in MiB (valid range depends on cpu)"
+
+  validation {
+    condition     = var.memory >= 512 && var.memory <= 122880
+    error_message = "memory must be between 512 and 122880 MiB."
+  }
 }
 
 variable "efs_posix_uid" {

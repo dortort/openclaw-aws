@@ -15,6 +15,14 @@ gateway_image_digest = "sha256:REPLACE_WITH_DIGEST"
 # Provide via TF_VAR_gateway_token or set here.
 # gateway_token = "REPLACE_WITH_TOKEN"
 
+# Fargate CPU/memory – must be a valid combination:
+#   256 CPU  →  512, 1024, 2048 MiB
+#   512 CPU  →  1024–4096 MiB  (1024 step)
+#  1024 CPU  →  2048–8192 MiB  (1024 step)
+#  2048 CPU  →  4096–16384 MiB (1024 step)
+#  4096 CPU  →  8192–30720 MiB (1024 step)
+#  8192 CPU  → 16384–61440 MiB (4096 step)
+# 16384 CPU  → 32768–122880 MiB (8192 step)
 ecs_cpu    = 512
 ecs_memory = 1024
 
