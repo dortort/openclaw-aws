@@ -1,0 +1,39 @@
+{
+  "name": "agentbound",
+  "version": "0.1.0",
+  "description": "AgentBound – Access control framework for MCP servers. Provides AgentManifest (declarative permission policy), AgentBox (sandbox enforcement engine), and AgentManifestGen (automated manifest generator).",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "agentbound": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": [
+    "agentbound",
+    "mcp",
+    "model-context-protocol",
+    "access-control",
+    "sandbox",
+    "security",
+    "ai-agents",
+    "agent-manifest"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "examples"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.2.1"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "name": "filesystem-mcp-server",
+  "description": "MCP server that provides file system operations (read, write, search) within a specified workspace directory.",
+  "permissions": [
+    {
+      "permission": "file_read",
+      "justification": "Reads files from the workspace to serve file content and directory listings to the agent."
+    },
+    {
+      "permission": "file_write",
+      "justification": "Writes and creates files in the workspace as directed by the agent."
+    }
+  ]
+}

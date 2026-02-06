@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "name": "fetch-mcp-server",
+  "description": "MCP server that fetches content from URLs and converts it to markdown for the agent.",
+  "permissions": [
+    {
+      "permission": "network_outbound",
+      "justification": "Makes outbound HTTP/HTTPS requests to fetch web page content on behalf of the agent."
+    }
+  ]
+}

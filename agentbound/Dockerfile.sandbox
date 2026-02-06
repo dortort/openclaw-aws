@@ -1,0 +1,40 @@
+# AgentBound Sandbox Base Image
+#
+# A minimal, hardened container image used by AgentBox to sandbox MCP servers.
+# MCP servers run inside this image with restricted capabilities, read-only
+# root filesystem, and only the mounts/network/env explicitly granted by the
+# RuntimePolicy.
+
+FROM node:22-bookworm-slim
+
+LABEL org.opencontainers.image.title="agentbound-sandbox"
+LABEL org.opencontainers.image.description="Hardened sandbox container for AgentBound MCP server isolation"
+
+# Install minimal system utilities needed by some MCP servers
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        iptables \
+        python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for running MCP servers
+RUN groupadd -r mcpuser && useradd -r -g mcpuser -d /home/mcpuser -s /bin/sh mcpuser
+RUN mkdir -p /home/mcpuser && chown mcpuser:mcpuser /home/mcpuser
+
+# Copy the sandbox init script
+COPY scripts/sandbox-init.sh /usr/local/bin/sandbox-init.sh
+RUN chmod +x /usr/local/bin/sandbox-init.sh
+
+# Default working directory
+WORKDIR /home/mcpuser
+
+# Drop to non-root by default
+USER mcpuser
+
+# The actual MCP server command is provided at container creation time.
+# This entrypoint runs the sandbox init script, which applies iptables
+# rules (if running as root with NET_ADMIN) and then execs the server.
+ENTRYPOINT ["/usr/local/bin/sandbox-init.sh"]

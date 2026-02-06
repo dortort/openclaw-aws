@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "name": "github-mcp-server",
+  "description": "MCP server that interfaces with the GitHub API, enabling repository management, issue tracking, and pull request operations.",
+  "permissions": [
+    {
+      "permission": "network_outbound",
+      "justification": "Connects to the GitHub API (api.github.com) to perform repository operations."
+    },
+    {
+      "permission": "secret_read",
+      "justification": "Reads the GITHUB_TOKEN credential to authenticate with the GitHub API."
+    },
+    {
+      "permission": "env_read",
+      "justification": "Reads GITHUB_TOKEN and GITHUB_API_URL environment variables for configuration."
+    }
+  ]
+}

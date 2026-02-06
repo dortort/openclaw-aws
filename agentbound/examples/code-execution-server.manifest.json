@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "name": "code-execution-mcp-server",
+  "description": "MCP server that executes code snippets in isolated environments, supporting Python and Node.js runtimes.",
+  "permissions": [
+    {
+      "permission": "process_exec",
+      "justification": "Spawns interpreter processes (node, python3) to execute code provided by the agent."
+    },
+    {
+      "permission": "file_read",
+      "justification": "Reads source files from the workspace to provide as context for code execution."
+    },
+    {
+      "permission": "file_write",
+      "justification": "Writes execution output and generated files to the workspace."
+    }
+  ]
+}
