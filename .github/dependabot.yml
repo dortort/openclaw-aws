@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: docker
     directories: ["/app"]
     schedule: { interval: monthly }
-    cooldown: { default-days: 7, semver-major-days: 14 }
+    cooldown: { default-days: 7 }
     commit-message: { prefix: chore, include: scope }
     groups:
       docker-minor-patch:
@@ -13,7 +13,7 @@ updates:
   - package-ecosystem: terraform
     directories: ["/infra/bootstrap", "/infra/main", "/infra/main/modules/*"]
     schedule: { interval: monthly }
-    cooldown: { default-days: 7, semver-major-days: 14 }
+    cooldown: { default-days: 7 }
     commit-message: { prefix: chore, include: scope }
     groups:
       terraform-minor-patch:
