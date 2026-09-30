@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: docker
+    directories: ["/app"]
+    schedule: { interval: monthly }
+    cooldown: { default-days: 7, semver-major-days: 14 }
+    commit-message: { prefix: chore, include: scope }
+    groups:
+      docker-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: terraform
+    directories: ["/infra/bootstrap", "/infra/main", "/infra/main/modules/*"]
+    schedule: { interval: monthly }
+    cooldown: { default-days: 7, semver-major-days: 14 }
+    commit-message: { prefix: chore, include: scope }
+    groups:
+      terraform-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule: { interval: monthly }
+    cooldown: { default-days: 7 }
+    commit-message: { prefix: ci, include: scope }
+    groups:
+      actions:
+        patterns: ["*"]
