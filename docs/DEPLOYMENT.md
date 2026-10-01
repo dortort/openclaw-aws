@@ -68,7 +68,7 @@ Fargate, EFS for state, and ECR for images.
 
 3. Configure GitHub Actions secrets (for CI/CD).
 
-   Required by `.github/workflows/deploy-main.yml`:
+   Required by `.github/workflows/deploy.yml` (called by `deploy-main.yml` and `scheduled-rebuild.yml`):
    - `AWS_REGION`
    - `AWS_ACCOUNT_ID`
    - `AWS_ROLE_ARN` (OIDC role for GitHub Actions)
