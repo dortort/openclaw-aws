@@ -397,4 +397,6 @@ resource "aws_ecs_service" "this" {
     container_name   = "gateway"
     container_port   = var.container_port
   }
+
+  depends_on = [aws_iam_role_policy_attachment.execution_secrets]
 }
