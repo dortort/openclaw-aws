@@ -7,3 +7,8 @@ output "kms_key_arn" {
   value       = var.enable_kms ? aws_kms_key.tf_state[0].arn : null
   description = "KMS key ARN for state encryption"
 }
+
+output "access_log_bucket_name" {
+  value       = aws_s3_bucket.access_logs.bucket
+  description = "S3 bucket receiving state bucket access logs"
+}
