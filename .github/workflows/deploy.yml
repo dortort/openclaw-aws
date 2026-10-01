@@ -21,9 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare OpenClaw source
+      - name: Resolve OpenClaw release
         id: openclaw
-        uses: ./.github/actions/prepare-openclaw-source
+        uses: ./.github/actions/resolve-openclaw-release
         with:
           token: ${{ github.token }}
 
@@ -45,12 +45,11 @@ jobs:
           context: ./app
           push: true
           build-args: |
+            OPENCLAW_IMAGE_TAG=${{ steps.openclaw.outputs.image_tag }}
             OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}
           tags: |
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
             ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ steps.openclaw.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Get image digest
         id: digest

@@ -69,18 +69,18 @@ Or with Terraform directly:
 
 ## Docker image
 
-This repo builds the OpenClaw gateway image from upstream source. CI resolves the
-latest OpenClaw release tag via the GitHub API, checks it out before the Docker
-build, and passes the tag as `OPENCLAW_VERSION` to label the image. The pushed
-image is tagged with both the repository commit SHA and the OpenClaw release tag.
+This repo layers its config and entrypoint on top of the official upstream image
+(`ghcr.io/openclaw/openclaw`). CI resolves the latest OpenClaw release tag via the
+GitHub API, builds `FROM` the matching upstream image tag (`OPENCLAW_IMAGE_TAG`,
+the release tag without its `v` prefix), and passes the release tag as
+`OPENCLAW_VERSION` to label the image. The pushed image is tagged with both the
+repository commit SHA and the OpenClaw release tag.
 
 Local build (manual):
 1. Fetch the latest release tag:
-   - `curl -fsSL https://api.github.com/repos/openclaw/openclaw/releases/latest | jq -r .tag_name`
-2. Clone OpenClaw into `app/openclaw`:
-   - `git clone --depth 1 --branch "<tag>" https://github.com/openclaw/openclaw app/openclaw`
-3. Build the image:
-   - `docker build --build-arg OPENCLAW_VERSION="<tag>" -t openclaw:local ./app`
+   - `tag="$(curl -fsSL https://api.github.com/repos/openclaw/openclaw/releases/latest | jq -r .tag_name)"`
+2. Build the image:
+   - `docker build --build-arg OPENCLAW_IMAGE_TAG="${tag#v}" --build-arg OPENCLAW_VERSION="${tag}" -t openclaw:local ./app`
 
 Runtime knobs:
 - `OPENCLAW_GATEWAY_BIND` (default: `lan`)
