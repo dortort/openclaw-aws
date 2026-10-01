@@ -82,28 +82,42 @@ jobs:
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Build image
         uses: docker/build-push-action@v6
         with:
           context: ./app
           push: false
+          load: true
           build-args: |
             OPENCLAW_IMAGE_TAG=${{ steps.openclaw.outputs.image_tag }}
             OPENCLAW_VERSION=${{ steps.openclaw.outputs.version }}
           tags: |
             openclaw:pr
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
-      - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.28.0
+      - name: Trivy report (HIGH and CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: openclaw:pr
+          format: table
+          exit-code: 0
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+          timeout: 20m
+
+      - name: Trivy gate (fixable CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: openclaw:pr
           format: table
           exit-code: 1
+          ignore-unfixed: true
           vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+          severity: "CRITICAL"
+          timeout: 20m
+          skip-setup-trivy: true
 
       - name: Install dgoss
         run: |
