@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22-bookworm AS build
+FROM node:26-bookworm AS build
 
 ARG OPENCLAW_DOCKER_APT_PACKAGES=""
 ARG OPENCLAW_VERSION=""
@@ -39,7 +39,7 @@ RUN OPENCLAW_A2UI_SKIP_MISSING=1 pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
 RUN pnpm ui:build
 
-FROM node:22-bookworm-slim
+FROM node:26-bookworm-slim
 
 ARG OPENCLAW_VERSION=""
 LABEL org.opencontainers.image.source="https://github.com/openclaw/openclaw"
