@@ -120,10 +120,19 @@ jobs:
           skip-setup-trivy: true
 
       - name: Install dgoss
+        env:
+          GOSS_VERSION: v0.4.10
+          GOSS_SHA256: 26e365428946294bcec0c61d867bb3c8349f39feb3d0e6f59084e98632785cc7
+          DGOSS_SHA256: 3bb3ac9df33eeab8ce71a35763f4a69582eceb7db7bf02b4d0a551e72c7a888d
+        working-directory: ${{ runner.temp }}
         run: |
-          curl -fsSL https://github.com/goss-org/goss/releases/latest/download/goss-linux-amd64 -o /usr/local/bin/goss
-          curl -fsSL https://github.com/goss-org/goss/releases/latest/download/dgoss -o /usr/local/bin/dgoss
-          chmod +x /usr/local/bin/goss /usr/local/bin/dgoss
+          base="https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}"
+          curl -fsSL "${base}/goss_${GOSS_VERSION#v}_linux_x86_64.tar.gz" -o goss.tar.gz
+          curl -fsSL "${base}/dgoss" -o dgoss
+          echo "${GOSS_SHA256}  goss.tar.gz" | sha256sum -c -
+          echo "${DGOSS_SHA256}  dgoss" | sha256sum -c -
+          tar xzf goss.tar.gz goss
+          sudo install -m 0755 goss dgoss /usr/local/bin/
 
       - name: Run dgoss
         env:
