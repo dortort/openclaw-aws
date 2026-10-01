@@ -8,6 +8,32 @@ variable "vpc_id" {
   description = "VPC ID"
 }
 
+variable "vpc_cidr" {
+  type        = string
+  description = "VPC CIDR block"
+}
+
+variable "s3_prefix_list_id" {
+  type        = string
+  description = "Prefix list ID of the S3 gateway endpoint"
+}
+
+variable "allow_internet_egress" {
+  type        = bool
+  description = "Whether ECS tasks may reach the internet (requires NAT)"
+  default     = false
+}
+
+variable "kms_key_arn" {
+  type        = string
+  description = "KMS key ARN for secrets and log encryption"
+}
+
+variable "access_logs_bucket" {
+  type        = string
+  description = "S3 bucket name for ALB access logs"
+}
+
 variable "private_subnet_id_map" {
   type        = map(string)
   description = "Private subnet IDs keyed by stable index"
