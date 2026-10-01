@@ -87,6 +87,7 @@ resource "aws_s3_bucket_logging" "tf_state" {
   bucket        = aws_s3_bucket.tf_state.id
   target_bucket = aws_s3_bucket.access_logs.id
   target_prefix = "tf-state/"
+  depends_on    = [aws_s3_bucket_policy.access_logs]
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "tf_state" {
