@@ -129,4 +129,5 @@ jobs:
         env:
           GOSS_FILES_PATH: app
           GOSS_FILE: goss.yaml
-        run: dgoss run openclaw:pr
+          GOSS_OPTS: --retry-timeout 180s --sleep 5s
+        run: dgoss run -e OPENCLAW_GATEWAY_TOKEN=dgoss-ci-token openclaw:pr
