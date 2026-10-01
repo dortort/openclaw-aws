@@ -51,6 +51,10 @@ resource "aws_instance" "this" {
     encrypted = true
   }
 
+  lifecycle {
+    ignore_changes = [root_block_device, ebs_optimized]
+  }
+
   user_data = <<-EOF
     #!/usr/bin/env bash
     set -euo pipefail
