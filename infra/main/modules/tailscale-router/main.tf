@@ -34,12 +34,12 @@ resource "aws_iam_instance_profile" "this" {
 }
 
 resource "aws_instance" "this" {
+  #checkov:skip=CKV_AWS_135:Current-generation types are EBS-optimized by default; forcing it rejects types without support
   ami                    = var.ami_id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.this.name
-  ebs_optimized          = true
   monitoring             = true
 
   metadata_options {
@@ -52,7 +52,7 @@ resource "aws_instance" "this" {
   }
 
   lifecycle {
-    ignore_changes = [root_block_device, ebs_optimized]
+    ignore_changes = [root_block_device]
   }
 
   user_data = <<-EOF
