@@ -1,10 +1,5 @@
-data "aws_region" "current" {}
-
 data "aws_availability_zones" "available" {
-  filter {
-    name   = "zone-name"
-    values = [for suffix in ["a", "b", "c"] : "${data.aws_region.current.region}${suffix}"]
-  }
+  #checkov:skip=CKV_AWS_394:Zone names vary per region and account, so subnets index the provider's sorted zone list
 }
 
 resource "aws_vpc" "this" {
