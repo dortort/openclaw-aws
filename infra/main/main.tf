@@ -10,9 +10,18 @@ locals {
   image_uri                = var.gateway_image_tag != "" ? "${local.repository_url}:${var.gateway_image_tag}" : "${local.repository_url}@${var.gateway_image_digest}"
   gateway_token_enabled    = var.gateway_token != ""
   gateway_token_secret_arn = local.gateway_token_enabled ? aws_secretsmanager_secret.gateway_token[0].arn : null
+  tailscale_internet_egress = {
+    http      = { description = "Package repositories", protocol = "tcp", port = 80 }
+    https     = { description = "Tailscale control plane, DERP and installer", protocol = "tcp", port = 443 }
+    wireguard = { description = "Tailscale WireGuard", protocol = "udp", port = 41641 }
+    stun      = { description = "Tailscale STUN", protocol = "udp", port = 3478 }
+  }
 }
 
+#tfsec:ignore:aws-ecr-enforce-immutable-repository tfsec:ignore:aws-ecr-repository-customer-key
 resource "aws_ecr_repository" "gateway" {
+  #checkov:skip=CKV_AWS_51:Release tags are re-pushed on rebuild; ECS deploys pin images by digest
+  #checkov:skip=CKV_AWS_136:Changing ECR encryption forces repository replacement; images are AES256-encrypted at rest
   name                 = var.ecr_repository_name
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration {
@@ -58,8 +67,10 @@ resource "aws_ecr_lifecycle_policy" "gateway" {
 }
 
 resource "aws_secretsmanager_secret" "gateway_token" {
-  count = local.gateway_token_enabled ? 1 : 0
-  name  = "${local.name_prefix}-gateway-token"
+  #checkov:skip=CKV2_AWS_57:Token is supplied from the OPENCLAW_GATEWAY_TOKEN CI secret, not rotated by AWS
+  count      = local.gateway_token_enabled ? 1 : 0
+  name       = "${local.name_prefix}-gateway-token"
+  kms_key_id = aws_kms_key.app.arn
 }
 
 resource "aws_secretsmanager_secret_version" "gateway_token" {
@@ -69,12 +80,13 @@ resource "aws_secretsmanager_secret_version" "gateway_token" {
 }
 
 module "vpc" {
-  source               = "./modules/vpc"
-  project_name         = local.name_prefix
-  vpc_cidr             = var.vpc_cidr
-  private_subnet_cidrs = var.private_subnet_cidrs
-  public_subnet_cidrs  = var.public_subnet_cidrs
-  enable_nat           = var.enable_nat
+  source                   = "./modules/vpc"
+  project_name             = local.name_prefix
+  vpc_cidr                 = var.vpc_cidr
+  private_subnet_cidrs     = var.private_subnet_cidrs
+  public_subnet_cidrs      = var.public_subnet_cidrs
+  enable_nat               = var.enable_nat
+  flow_log_destination_arn = "arn:aws:s3:::${aws_s3_bucket_policy.logs.bucket}/vpc-flow-logs/"
 }
 
 resource "aws_security_group" "vpc_endpoints" {
@@ -83,18 +95,14 @@ resource "aws_security_group" "vpc_endpoints" {
   vpc_id      = module.vpc.vpc_id
 
   ingress {
+    description = "HTTPS from the VPC"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = [var.vpc_cidr]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  egress = []
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
@@ -157,6 +165,7 @@ resource "aws_security_group" "tailscale_router" {
   dynamic "ingress" {
     for_each = var.tailscale_ssh_cidrs
     content {
+      description = "SSH from the tailnet"
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
@@ -165,10 +174,23 @@ resource "aws_security_group" "tailscale_router" {
   }
 
   egress {
+    description = "Forward tailnet traffic into the VPC"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  dynamic "egress" {
+    for_each = local.tailscale_internet_egress
+    content {
+      description = egress.value.description
+      from_port   = egress.value.port
+      to_port     = egress.value.port
+      protocol    = egress.value.protocol
+      #tfsec:ignore:aws-ec2-no-public-egress-sgr
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
 }
 
@@ -176,7 +198,12 @@ module "service_stack" {
   source                             = "./modules/service-stack"
   project_name                       = local.name_prefix
   vpc_id                             = module.vpc.vpc_id
+  vpc_cidr                           = var.vpc_cidr
   private_subnet_id_map              = module.vpc.private_subnet_id_map
+  s3_prefix_list_id                  = aws_vpc_endpoint.s3.prefix_list_id
+  allow_internet_egress              = var.enable_nat
+  kms_key_arn                        = aws_kms_key.app.arn
+  access_logs_bucket                 = aws_s3_bucket_policy.logs.bucket
   app_port                           = var.app_port
   health_check_path                  = var.health_check_path
   health_check_grace_period_seconds  = var.health_check_grace_period_seconds

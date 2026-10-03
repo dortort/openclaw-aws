@@ -68,7 +68,7 @@ Fargate, EFS for state, and ECR for images.
 
 3. Configure GitHub Actions secrets (for CI/CD).
 
-   Required by `.github/workflows/deploy-main.yml`:
+   Required by `.github/workflows/deploy.yml` (called by `deploy-main.yml` and `scheduled-rebuild.yml`):
    - `AWS_REGION`
    - `AWS_ACCOUNT_ID`
    - `AWS_ROLE_ARN` (OIDC role for GitHub Actions)
@@ -171,7 +171,6 @@ Fargate, EFS for state, and ECR for images.
    - Resolve the latest OpenClaw tag and build:
      ```
      tag="$(curl -fsSL https://api.github.com/repos/openclaw/openclaw/releases/latest | jq -r .tag_name)"
-     git clone --depth 1 --branch "$tag" https://github.com/openclaw/openclaw app/openclaw
      aws ecr get-login-password --region "${AWS_REGION}" | \
        docker login --username AWS --password-stdin \
        "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
@@ -179,6 +178,7 @@ Fargate, EFS for state, and ECR for images.
      IMAGE_TAG_RELEASE="${tag}"
      IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}"
      docker build \
+       --build-arg "OPENCLAW_IMAGE_TAG=${tag#v}" \
        --build-arg "OPENCLAW_VERSION=${tag}" \
        -t "${IMAGE_URI}:${IMAGE_TAG_SHA}" \
        -t "${IMAGE_URI}:${IMAGE_TAG_RELEASE}" \

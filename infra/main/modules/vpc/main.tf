@@ -1,4 +1,6 @@
-data "aws_availability_zones" "available" {}
+data "aws_availability_zones" "available" {
+  #checkov:skip=CKV_AWS_394:Zone names vary per region and account, so subnets index the provider's sorted zone list
+}
 
 resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
@@ -8,6 +10,17 @@ resource "aws_vpc" "this" {
   tags = {
     Name = "${var.project_name}-vpc"
   }
+}
+
+resource "aws_flow_log" "this" {
+  vpc_id               = aws_vpc.this.id
+  traffic_type         = "ALL"
+  log_destination_type = "s3"
+  log_destination      = var.flow_log_destination_arn
+}
+
+resource "aws_default_security_group" "this" {
+  vpc_id = aws_vpc.this.id
 }
 
 resource "aws_internet_gateway" "this" {
@@ -37,7 +50,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.this.id
   cidr_block              = each.value
   availability_zone       = data.aws_availability_zones.available.names[each.key]
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "${var.project_name}-public-${each.key}"

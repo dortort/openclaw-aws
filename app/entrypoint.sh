@@ -17,6 +17,6 @@ if [[ ! -f "${CONFIG_PATH}" && -f "${CONFIG_SOURCE}" ]]; then
   cp "${CONFIG_SOURCE}" "${CONFIG_PATH}"
 fi
 
-exec node dist/index.js gateway \
+exec node /app/docker-entrypoint.mjs node dist/index.js gateway \
   --bind "${OPENCLAW_GATEWAY_BIND:-lan}" \
   --port "${OPENCLAW_GATEWAY_PORT:-18789}"

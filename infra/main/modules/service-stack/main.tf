@@ -65,6 +65,11 @@ data "aws_iam_policy_document" "secrets_access" {
     ]
     resources = local.secret_arns
   }
+
+  statement {
+    actions   = ["kms:Decrypt"]
+    resources = [var.kms_key_arn]
+  }
 }
 
 resource "aws_iam_policy" "secrets_access" {
@@ -80,6 +85,8 @@ resource "aws_iam_role_policy_attachment" "execution_secrets" {
 }
 
 data "aws_iam_policy_document" "ecs_exec" {
+  #checkov:skip=CKV_AWS_111:ECS Exec ssmmessages actions do not support resource-level permissions
+  #checkov:skip=CKV_AWS_356:ECS Exec ssmmessages actions do not support resource-level permissions
   statement {
     actions = [
       "ssm:UpdateInstanceInformation",
@@ -108,6 +115,7 @@ resource "aws_security_group" "alb" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "Gateway from the Tailscale router"
     from_port       = var.app_port
     to_port         = var.app_port
     protocol        = "tcp"
@@ -117,6 +125,7 @@ resource "aws_security_group" "alb" {
   dynamic "ingress" {
     for_each = var.tailnet_cidrs
     content {
+      description = "Gateway from the tailnet"
       from_port   = var.app_port
       to_port     = var.app_port
       protocol    = "tcp"
@@ -125,19 +134,22 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "Gateway targets in the VPC"
+    from_port   = var.container_port
+    to_port     = var.container_port
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
   }
 }
 
 resource "aws_security_group" "ecs" {
+  #checkov:skip=CKV_AWS_382:Unrestricted egress is only rendered when enable_nat is set, for model and channel APIs
   name        = "${local.name_prefix}-ecs-sg"
   description = "ECS service ingress from ALB"
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "Gateway from the ALB"
     from_port       = var.app_port
     to_port         = var.app_port
     protocol        = "tcp"
@@ -145,10 +157,31 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
+    description = "VPC endpoints, EFS and in-VPC services"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description     = "ECR image layers via the S3 gateway endpoint"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [var.s3_prefix_list_id]
+  }
+
+  dynamic "egress" {
+    for_each = var.allow_internet_egress ? [1] : []
+    content {
+      description = "Internet via NAT for model and channel APIs"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      #tfsec:ignore:aws-ec2-no-public-egress-sgr
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
 }
 
@@ -158,29 +191,35 @@ resource "aws_security_group" "efs" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description     = "NFS from ECS tasks"
     from_port       = 2049
     to_port         = 2049
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs.id]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  egress = []
 }
 
 resource "aws_lb" "this" {
-  name               = "${local.name_prefix}-alb"
-  internal           = true
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  subnets            = local.private_subnet_ids
+  #checkov:skip=CKV2_AWS_20:Internal ALB reached over the WireGuard-encrypted tailnet; HTTPS needs an ACM certificate and domain
+  name                       = "${local.name_prefix}-alb"
+  internal                   = true
+  load_balancer_type         = "application"
+  security_groups            = [aws_security_group.alb.id]
+  subnets                    = local.private_subnet_ids
+  drop_invalid_header_fields = true
+  enable_deletion_protection = true
+
+  access_logs {
+    bucket  = var.access_logs_bucket
+    prefix  = "alb"
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "this" {
+  #checkov:skip=CKV_AWS_378:The gateway container serves plain HTTP inside the VPC
   name                 = "${local.name_prefix}-tg"
   port                 = var.app_port
   protocol             = "HTTP"
@@ -197,7 +236,10 @@ resource "aws_lb_target_group" "this" {
   }
 }
 
+#tfsec:ignore:aws-elb-http-not-used
 resource "aws_lb_listener" "http" {
+  #checkov:skip=CKV_AWS_2:Internal ALB reached over the WireGuard-encrypted tailnet; HTTPS needs an ACM certificate and domain
+  #checkov:skip=CKV_AWS_103:No TLS listener until an ACM certificate is provided
   load_balancer_arn = aws_lb.this.arn
   port              = var.app_port
   protocol          = "HTTP"
@@ -209,6 +251,7 @@ resource "aws_lb_listener" "http" {
 }
 
 resource "aws_efs_file_system" "this" {
+  #checkov:skip=CKV_AWS_184:Switching to a customer managed key forces file system replacement and loses gateway state
   encrypted = true
 
   tags = {
@@ -243,11 +286,17 @@ resource "aws_efs_access_point" "this" {
 
 resource "aws_ecs_cluster" "this" {
   name = local.cluster_name
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 resource "aws_cloudwatch_log_group" "this" {
   name              = "/ecs/${local.name_prefix}"
-  retention_in_days = 30
+  retention_in_days = 365
+  kms_key_id        = var.kms_key_arn
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -348,4 +397,6 @@ resource "aws_ecs_service" "this" {
     container_name   = "gateway"
     container_port   = var.container_port
   }
+
+  depends_on = [aws_iam_role_policy_attachment.execution_secrets]
 }

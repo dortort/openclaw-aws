@@ -24,3 +24,8 @@ variable "enable_nat" {
   description = "Whether to provision a NAT gateway"
   default     = false
 }
+
+variable "flow_log_destination_arn" {
+  type        = string
+  description = "S3 ARN (bucket/prefix) receiving VPC flow logs"
+}

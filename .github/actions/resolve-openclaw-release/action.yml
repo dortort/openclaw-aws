@@ -1,13 +1,9 @@
-name: Prepare OpenClaw source
-description: Resolve latest OpenClaw release and clone source
+name: Resolve OpenClaw release
+description: Resolve the latest OpenClaw release tag and its upstream image tag
 inputs:
   repo:
-    description: GitHub repo to clone
+    description: GitHub repo to resolve the release from
     default: openclaw/openclaw
-    required: false
-  destination:
-    description: Destination path for checkout
-    default: app/openclaw
     required: false
   token:
     description: GitHub token for API requests
@@ -16,6 +12,9 @@ outputs:
   version:
     description: Resolved OpenClaw release tag
     value: ${{ steps.resolve.outputs.version }}
+  image_tag:
+    description: Matching ghcr.io/openclaw/openclaw image tag
+    value: ${{ steps.resolve.outputs.image_tag }}
 runs:
   using: composite
   steps:
@@ -39,11 +38,4 @@ runs:
           exit 1
         fi
         echo "version=$tag" >> "$GITHUB_OUTPUT"
-    - name: Checkout OpenClaw source
-      shell: bash
-      run: |
-        set -euo pipefail
-        dest="${{ inputs.destination }}"
-        rm -rf "$dest"
-        git clone --depth 1 --branch "${{ steps.resolve.outputs.version }}" \
-          "https://github.com/${{ inputs.repo }}" "$dest"
+        echo "image_tag=${tag#v}" >> "$GITHUB_OUTPUT"
